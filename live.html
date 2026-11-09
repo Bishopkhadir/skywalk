@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KithGuard Live Tracking</title>
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
+    h1 { color: #38bdf8; margin-bottom: 10px; }
+    p { color: #94a3b8; margin-bottom: 30px; }
+    .btn { 
+      display: block; width: 100%; max-width: 300px; padding: 16px; 
+      margin: 10px 0; border-radius: 12px; font-size: 16px; font-weight: bold; 
+      text-decoration: none; transition: 0.2s; cursor: pointer; border: none;
+    }
+    .btn-app { background: #22c55e; color: white; }
+    .btn-app:hover { background: #16a34a; }
+    .btn-web { background: transparent; color: #38bdf8; border: 2px solid #38bdf8; }
+    .btn-web:hover { background: #0c4a6e; }
+    .icon { font-size: 60px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="icon">🛡️</div>
+  <h1>Live Tracking</h1>
+  <p>How would you like to view this trip?</p>
+
+  <button class="btn btn-app" onclick="openApp()">📱 Open in KithGuard App</button>
+  <a class="btn btn-web" id="webLink" href="#">🌐 View on Web Browser</a>
+
+  <script>
+    // Get the ID from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('id');
+
+    // Set the web link
+    if (shareId) {
+      document.getElementById('webLink').href = `map.html?id=${shareId}`;
+    }
+
+    // Try to open the app
+    function openApp() {
+      if (!shareId) return;
+      
+      // Attempt to open the app via deep link
+      window.location.href = `kithguard://live?id=${shareId}`;
+      
+      // If the app doesn't open after 2.5 seconds, fall back to the web map
+      setTimeout(() => {
+        window.location.href = `map.html?id=${shareId}`;
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
