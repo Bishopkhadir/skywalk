@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KithGuard Map</title>
   <style>
-    body { margin: 0; font-family: sans-serif; background: #0f172a; color: white; }
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; }
     #map { height: 100vh; width: 100vw; }
-    #banner { position: absolute; top: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); padding: 15px; border-radius: 12px; z-index: 1000; text-align: center; border: 1px solid #334155; }
+    #banner { position: absolute; top: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); padding: 15px; border-radius: 12px; z-index: 1000; text-align: center; border: 1px solid #334155; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     h3 { margin: 0 0 5px 0; color: #38bdf8; font-size: 18px; }
     p { margin: 0; color: #94a3b8; font-size: 14px; }
     #error { color: #ef4444; font-weight: bold; margin-top: 10px; display: none; }
@@ -23,7 +23,8 @@
   <div id="map"></div>
 
   <script>
-    let map, marker;
+    let map, marker, routePolyline;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const shareId = urlParams.get('id');
 
@@ -34,6 +35,7 @@
         styles: [
           { elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
           { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+          { elementType: 'labels.text.stroke', stylers: [{ color: '#0f172a' }] },
           { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#334155' }] },
           { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0c4a6e' }] }
         ]
@@ -48,10 +50,15 @@
       try {
         const res = await fetch(`https://kithguard-api.onrender.com/location/public/${shareId}`);
         if (!res.ok) throw new Error('Link expired');
+        
         const data = await res.json();
         document.getElementById('name').innerText = `Tracking: ${data.name}`;
         document.getElementById('status').innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
+        document.getElementById('error').style.display = 'none';
+
         const pos = { lat: data.latitude, lng: data.longitude };
+        
+        // Move the marker
         if (!marker) {
           marker = new google.maps.Marker({ position: pos, map: map, icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' });
           map.setCenter(pos);
@@ -59,6 +66,25 @@
           marker.setPosition(pos);
           map.panTo(pos);
         }
+
+        // ✅ Draw the road route
+        if (data.route && data.route.length > 0) {
+          const routePath = data.route.map(p => ({ lat: p.latitude, lng: p.longitude }));
+          
+          if (routePolyline) {
+            routePolyline.setPath(routePath);
+          } else {
+            routePolyline = new google.maps.Polyline({
+              path: routePath,
+              geodesic: true,
+              strokeColor: '#38bdf8',
+              strokeOpacity: 1.0,
+              strokeWeight: 4,
+              map: map
+            });
+          }
+        }
+
       } catch (err) {
         document.getElementById('name').innerText = "Tracking Ended";
         document.getElementById('status').innerText = "The user is no longer sharing their location.";
@@ -69,7 +95,7 @@
     window.onload = () => {
       initMap();
       fetchLocation();
-      setInterval(fetchLocation, 10000);
+      setInterval(fetchLocation, 10000); // Update every 10 seconds
     };
   </script>
 </body>
