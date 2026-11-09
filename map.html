@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KithGuard Map</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #0f172a; color: white; }
+    #map { height: 100vh; width: 100vw; }
+    #banner { position: absolute; top: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); padding: 15px; border-radius: 12px; z-index: 1000; text-align: center; border: 1px solid #334155; }
+    h3 { margin: 0 0 5px 0; color: #38bdf8; font-size: 18px; }
+    p { margin: 0; color: #94a3b8; font-size: 14px; }
+    #error { color: #ef4444; font-weight: bold; margin-top: 10px; display: none; }
+  </style>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC34HO_eEP6yhJ3ICBCJ40_vXTt2bxTZBw"></script>
+</head>
+<body>
+  <div id="banner">
+    <h3 id="name">Loading KithGuard...</h3>
+    <p id="status">Fetching live location...</p>
+    <p id="error">This tracking link has expired or is invalid.</p>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    let map, marker;
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('id');
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 6.5244, lng: 3.3792 },
+        zoom: 15,
+        styles: [
+          { elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
+          { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+          { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#334155' }] },
+          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0c4a6e' }] }
+        ]
+      });
+    }
+
+    async function fetchLocation() {
+      if (!shareId) {
+        document.getElementById('error').style.display = 'block';
+        return;
+      }
+      try {
+        const res = await fetch(`https://kithguard-api.onrender.com/location/public/${shareId}`);
+        if (!res.ok) throw new Error('Link expired');
+        const data = await res.json();
+        document.getElementById('name').innerText = `Tracking: ${data.name}`;
+        document.getElementById('status').innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
+        const pos = { lat: data.latitude, lng: data.longitude };
+        if (!marker) {
+          marker = new google.maps.Marker({ position: pos, map: map, icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' });
+          map.setCenter(pos);
+        } else {
+          marker.setPosition(pos);
+          map.panTo(pos);
+        }
+      } catch (err) {
+        document.getElementById('name').innerText = "Tracking Ended";
+        document.getElementById('status').innerText = "The user is no longer sharing their location.";
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+
+    window.onload = () => {
+      initMap();
+      fetchLocation();
+      setInterval(fetchLocation, 10000);
+    };
+  </script>
+</body>
+</html>
